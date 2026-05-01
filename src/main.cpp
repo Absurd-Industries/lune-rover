@@ -17,9 +17,7 @@ void setup() {
   delay(1000);
   Serial.println("\n===== LUN-E =====");
 
-  // Set WiFi credentials (remove after first successful connect)
-  void setWifiCredentials(const char *, const char *);
-  setWifiCredentials("@manjusstudio", "wifi2020!");
+  // WiFi credentials are stored in NVS via the /wifi setup page
 
   initDrive();
   Serial.println("[DRV] OK");

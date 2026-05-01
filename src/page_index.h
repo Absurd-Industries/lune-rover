@@ -168,7 +168,7 @@ canvas#cv.full{position:absolute;top:0;left:0;width:100%;height:100%;max-width:n
     <button class="spd on" data-s="55">MED</button>
     <button class="spd" data-s="100">MAX</button>
   </div>
-  <div class="cbtn" id="autoBtn">AUTO</div>
+  <div class="cbtn" id="autoBtn" style="opacity:0.3;cursor:default">AUTO</div>
   <div class="cbtn" id="snapBtn">SNAP</div>
 </div>
 <div id="logWrap"></div>
@@ -332,12 +332,7 @@ var CLIFF_THRESH=35,FLOOR_THRESH=45,WALL_BIAS=12;
 
 function resetMap(){map.fill(0);mapX=MS/2;mapY=MS/2;heading=0;floorRef=null;floorFrames=0;}
 
-autoBtnEl.onclick=function(){autoMode=!autoMode;autoBtnEl.classList.toggle('on',autoMode);
-  autoNav.classList.toggle('on',autoMode);
-  if(!autoMode){stopCmd();aState='IDLE';document.getElementById('aState').textContent='OFF';
-    cliffEl.classList.remove('on');addLog('AUTO OFF');}
-  else{resetMap();addLog('AUTO ENGAGED — LEARNING FLOOR',true);aState='LEARN';startCmd();
-    if(!showMap){showMap=true;mapWrap.classList.add('on');mapBtn.classList.add('on');}}};
+autoBtnEl.onclick=function(){addLog('AUTO DISABLED — COMING SOON');};
 
 function drawMap(){
   var s=mapCv.width/MS;
