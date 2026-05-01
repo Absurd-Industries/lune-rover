@@ -24,7 +24,7 @@ bool initCamera() {
   cfg.pixel_format = PIXFORMAT_JPEG;
   cfg.grab_mode = CAMERA_GRAB_LATEST;
   cfg.fb_location = CAMERA_FB_IN_PSRAM;
-  cfg.jpeg_quality = 8;
+  cfg.jpeg_quality = 15;
   cfg.fb_count = 2;
   cfg.frame_size = FRAMESIZE_QVGA;
 

@@ -12,6 +12,7 @@
 #include <ESPmDNS.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <lwip/sockets.h>
 
 static Preferences prefs;
 static DNSServer dnsServer;
@@ -61,6 +62,7 @@ static esp_err_t streamHandler(httpd_req_t *req) {
     if (r == ESP_OK) r = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
     esp_camera_fb_return(fb);
     if (r != ESP_OK) break;
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
   return ESP_OK;
 }
@@ -78,6 +80,24 @@ static esp_err_t driveHandler(httpd_req_t *req) {
   httpd_resp_set_type(req, "text/plain");
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
   return httpd_resp_sendstr(req, "ok");
+}
+
+// ==================== WEBSOCKET ====================
+static esp_err_t wsHandler(httpd_req_t *req) {
+  if (req->method == HTTP_GET) return ESP_OK;
+  httpd_ws_frame_t frame;
+  uint8_t buf[32];
+  memset(&frame, 0, sizeof(frame));
+  frame.payload = buf;
+  frame.type = HTTPD_WS_TYPE_TEXT;
+  esp_err_t ret = httpd_ws_recv_frame(req, &frame, sizeof(buf) - 1);
+  if (ret != ESP_OK) return ret;
+  buf[frame.len] = 0;
+  int t = 0, s = 0;
+  char *comma = strchr((char *)buf, ',');
+  if (comma) { *comma = 0; t = atoi((char *)buf); s = atoi(comma + 1); }
+  drive(t, s);
+  return ESP_OK;
 }
 
 static esp_err_t statusHandler(httpd_req_t *req) {
@@ -173,26 +193,39 @@ static esp_err_t captiveRedirect(httpd_req_t *req) {
 
 // ==================== WEB SERVER ====================
 void startWebServer() {
-  // Stream server on port 81 (blocking stream handler won't block control endpoints)
+  // Stream server on port 81 — pinned to core 0
   httpd_config_t streamCfg = HTTPD_DEFAULT_CONFIG();
   streamCfg.server_port = 81;
   streamCfg.ctrl_port = 32769;
-  streamCfg.stack_size = 8192;
+  streamCfg.stack_size = 12288;
   streamCfg.max_uri_handlers = 2;
+  streamCfg.core_id = 0;
 
   if (httpd_start(&streamServer, &streamCfg) == ESP_OK) {
     httpd_uri_t streamRoute = { "/stream", HTTP_GET, streamHandler, NULL };
     httpd_register_uri_handler(streamServer, &streamRoute);
-    Serial.println("[WEB] Stream on :81");
+    Serial.println("[WEB] Stream on :81 core0");
   }
 
-  // Control server on port 80
+  // Control server on port 80 — pinned to core 1, high priority, low-latency
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = 80;
   config.stack_size = 8192;
   config.max_uri_handlers = 16;
+  config.core_id = 1;
+  config.task_priority = configMAX_PRIORITIES - 1;
+  config.recv_wait_timeout = 1;
+  config.send_wait_timeout = 1;
+  config.open_fn = [](httpd_handle_t hd, int sockfd) -> esp_err_t {
+    int nodelay = 1;
+    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
+    return ESP_OK;
+  };
 
   if (httpd_start(&webServer, &config) != ESP_OK) return;
+
+  httpd_uri_t wsRoute = { "/ws", HTTP_GET, wsHandler, NULL, .is_websocket = true };
+  httpd_register_uri_handler(webServer, &wsRoute);
 
   httpd_uri_t routes[] = {
     { "/",                HTTP_GET,  indexHandler,     NULL },
@@ -226,6 +259,8 @@ void setupNetwork() {
   String ssid = prefs.getString("ssid", "");
   String pass = prefs.getString("pass", "");
   prefs.end();
+
+  WiFi.setSleep(false);
 
   if (ssid.length() > 0) {
     Serial.printf("[NET] Connecting '%s'...\n", ssid.c_str());
