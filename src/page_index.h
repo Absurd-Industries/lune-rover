@@ -819,7 +819,7 @@ setInterval(function(){
 
   prevGray=gray;
   checkQuests();drawMap();
-},500);
+},200);
 
 // ===== ROVER VIEW (12fps) =====
 setInterval(function(){

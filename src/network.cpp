@@ -62,7 +62,7 @@ static esp_err_t streamHandler(httpd_req_t *req) {
     if (r == ESP_OK) r = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
     esp_camera_fb_return(fb);
     if (r != ESP_OK) break;
-    vTaskDelay(pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(30));
   }
   return ESP_OK;
 }
