@@ -8,6 +8,7 @@ static const char PAGE_INDEX[] PROGMEM = R"rawliteral(
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Explorer</title>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
 :root{--bg:#0A0A0A;--fg:#E0E0E0;--dim:#666;--bdr:#222;--pnl:#141414;
@@ -56,14 +57,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .trow input[type=range]{flex:1;height:3px;accent-color:var(--accent)}
 .trow span{width:35px;text-align:right;color:var(--fg);font-size:9px;flex-shrink:0}
 
-#camPanel{display:flex;flex-direction:column}
-#feedWrap{position:relative;background:#000;border-radius:3px;overflow:hidden}
-#feed{display:block;width:100%;max-height:300px;object-fit:contain}
-canvas#cv{display:none;width:100%;max-height:300px}
-#modeRow{display:flex;gap:4px;margin-top:6px}
+#camPanel{flex:1;min-height:0;display:flex;flex-direction:column}
+#feed{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:#000;border-radius:3px}
+#roverPanel{flex:1;min-height:0;display:flex;flex-direction:column}
+#roverWrap{flex:1;min-height:0;background:#000;border-radius:3px;overflow:hidden}
+canvas#cv{display:block;width:100%;height:100%;object-fit:contain}
 
-#dialogue{display:flex;flex-direction:column}
-#chatArea{flex:1;overflow-y:auto;min-height:60px;max-height:180px;padding:4px;font-size:10px;line-height:1.6}
+#dialogue{max-height:140px;display:flex;flex-direction:column;overflow:hidden}
+#chatArea{flex:1;overflow-y:auto;min-height:40px;max-height:90px;padding:4px;font-size:10px;line-height:1.6}
 .msg{margin-bottom:4px;padding:3px 6px;border-radius:3px}
 .msg.rover{color:var(--accent);border-left:2px solid var(--accent);padding-left:8px}
 .msg.human{color:var(--fg);text-align:right;border-right:2px solid var(--dim);padding-right:8px}
@@ -74,33 +75,34 @@ canvas#cv{display:none;width:100%;max-height:300px}
 #chatInput:focus{outline:none;border-color:var(--accent)}
 #chatInput::placeholder{color:#444}
 
-#logPanel{max-height:130px;overflow-y:auto;font-size:8px;color:var(--dim)}
+#logPanel{max-height:90px;overflow-y:auto;font-size:8px;color:var(--dim)}
 .log{padding:1px 0;white-space:nowrap}.log .ts{color:var(--accent);opacity:0.3;margin-right:4px}
 .log.hi{color:var(--accent)}.log.qlog{color:#4CAF50}
 
-#mapCv{display:block;width:100%;image-rendering:pixelated;border-radius:3px;background:#111}
+#map3d{flex:1;min-height:200px;background:#080808;border-radius:3px;overflow:hidden}
 #mapInfo{display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-top:4px}
 #mapInfo .v{color:var(--accent)}
-#mapLegend{display:flex;gap:8px;font-size:7px;color:var(--dim);margin-top:4px;flex-wrap:wrap}
 
-.qcard{border:1px solid var(--bdr);border-radius:6px;padding:12px;margin-bottom:8px}
+#questPanel .ph{cursor:pointer}
+#questBody{display:none}
+.qcard{border:1px solid var(--bdr);border-radius:6px;padding:10px;margin-bottom:6px}
 .qcard.active{border-color:var(--accent);background:rgba(255,106,0,0.05)}
-.qn{font-size:13px;font-weight:700;letter-spacing:0.05em;color:var(--fg);margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.qn i{width:14px;height:14px;stroke:var(--accent)}
-.qd{font-size:10px;color:var(--dim);margin-bottom:8px;line-height:1.4}
-.qp{height:4px;background:#222;border-radius:2px;margin-bottom:6px}
+.qn{font-size:12px;font-weight:700;letter-spacing:0.05em;color:var(--fg);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.qn i{width:12px;height:12px;stroke:var(--accent)}
+.qd{font-size:9px;color:var(--dim);margin-bottom:6px;line-height:1.4}
+.qp{height:3px;background:#222;border-radius:2px;margin-bottom:4px}
 .qb{height:100%;background:var(--accent);border-radius:2px;transition:width 0.5s}
-.qs{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:4px}
-.qs i{width:10px;height:10px}
-.qi{padding:8px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid #1a1a1a;color:var(--dim);display:flex;align-items:center;gap:8px}
+.qs{font-size:9px;color:var(--dim);display:flex;align-items:center;gap:4px}
+.qs i{width:9px;height:9px}
+.qi{padding:6px 8px;font-size:10px;cursor:pointer;border-bottom:1px solid #1a1a1a;color:var(--dim);display:flex;align-items:center;gap:6px}
 .qi:hover{color:var(--accent)}.qi.act{color:var(--accent);font-weight:700}
 .qi.done{color:#4CAF50}.qi.locked{color:#333;cursor:default}
-.qi i{width:12px;height:12px;flex-shrink:0}
+.qi i{width:10px;height:10px;flex-shrink:0}
 
 @media(max-width:768px){
   #grid{grid-template-columns:1fr;grid-template-rows:auto;height:auto;min-height:100vh;overflow-y:auto}
   #joy{width:100px;height:100px}
-  #feed{max-height:200px}canvas#cv{max-height:200px}
+  #map3d{min-height:250px}
 }
 </style>
 </head>
@@ -108,10 +110,7 @@ canvas#cv{display:none;width:100%;max-height:300px}
 <div id="grid">
 <div class="col">
   <div class="pnl" id="identity">
-    <div id="eyes">
-      <div class="eye"></div>
-      <div class="eye"></div>
-    </div>
+    <div id="eyes"><div class="eye"></div><div class="eye"></div></div>
     <div id="stateLabel">BOOTING</div>
     <div id="energyWrap"><div id="energyBar"></div></div>
     <div id="connStatus">CONNECTING...</div>
@@ -136,7 +135,9 @@ canvas#cv{display:none;width:100%;max-height:300px}
     <div class="tr"><span>TRN</span><span class="tv" id="tS">0</span></div>
     <div class="tr"><span>FLOOR</span><span class="tv" id="tFloor">--%</span></div>
     <div class="tr"><span>CLEAR</span><span class="tv" id="tClear">--</span></div>
+    <div class="tr"><span>EDGE%</span><span class="tv" id="tEdge">0</span></div>
     <div class="tr"><span>MOT%</span><span class="tv" id="tMot">0</span></div>
+    <div class="tr"><span>ML</span><span class="tv" id="tML">--</span></div>
   </div>
   <div class="pnl" id="tunerPanel">
     <div class="ph" onclick="toggleTuner()"><i data-lucide="sliders-horizontal"></i>TUNER <span id="tunerArrow">&#9656;</span></div>
@@ -151,17 +152,14 @@ canvas#cv{display:none;width:100%;max-height:300px}
 </div>
 <div class="col">
   <div class="pnl" id="camPanel">
-    <div class="ph"><i data-lucide="eye"></i>VISION</div>
-    <div id="feedWrap">
-      <img id="feed" crossorigin="anonymous">
-      <canvas id="cv"></canvas>
-    </div>
-    <div id="modeRow">
-      <button class="btn on" data-m="raw">Raw</button>
-      <button class="btn" data-m="rover">Rover View</button>
-    </div>
+    <div class="ph"><i data-lucide="video"></i>CAMERA</div>
+    <img id="feed" crossorigin="anonymous">
   </div>
-  <div class="pnl pnl-grow" id="dialogue">
+  <div class="pnl" id="roverPanel">
+    <div class="ph"><i data-lucide="eye"></i>ROVER VIEW</div>
+    <div id="roverWrap"><canvas id="cv"></canvas></div>
+  </div>
+  <div class="pnl" id="dialogue">
     <div class="ph"><i data-lucide="message-square"></i>COMMS</div>
     <div id="chatArea"></div>
     <input id="chatInput" type="text" placeholder="Say something..." autocomplete="off">
@@ -171,24 +169,20 @@ canvas#cv{display:none;width:100%;max-height:300px}
   </div>
 </div>
 <div class="col">
-  <div class="pnl" id="questPanel">
-    <div class="ph"><i data-lucide="scroll-text"></i>MISSIONS</div>
-    <div id="activeQ"></div>
-    <div id="questList"></div>
-  </div>
   <div class="pnl pnl-grow" id="mapPanel">
-    <div class="ph"><i data-lucide="map"></i>EXPLORATION</div>
-    <canvas id="mapCv" width="256" height="256"></canvas>
+    <div class="ph"><i data-lucide="radar"></i>DISCOVERY MAP</div>
+    <div id="map3d"></div>
     <div id="mapInfo">
       <span>EXPLORED <span class="v" id="mapPct">0</span>%</span>
       <span>POS <span class="v" id="mapPos">32,32</span></span>
       <span>HDG <span class="v" id="mapHdg">0</span>&deg;</span>
     </div>
-    <div id="mapLegend">
-      <span style="color:#44CC66">&#8226; explored</span>
-      <span style="color:#FF4444">&#10005; obstacle</span>
-      <span style="color:gold">&#9733; quest</span>
-      <span style="color:#9966CC">&#9650; rover</span>
+  </div>
+  <div class="pnl" id="questPanel">
+    <div class="ph" onclick="toggleQuests()"><i data-lucide="scroll-text"></i>MISSIONS <span id="questArrow">&#9656;</span></div>
+    <div id="questBody">
+      <div id="activeQ"></div>
+      <div id="questList"></div>
     </div>
   </div>
 </div>
@@ -200,30 +194,20 @@ var feed=document.getElementById('feed'),cv=document.getElementById('cv'),
     ctx=cv.getContext('2d',{willReadFrequently:true});
 var streamUrl=location.protocol+'//'+location.hostname+':81/stream';
 feed.src=streamUrl;
-var viewMode='raw';
 var jT=0,jS=0,maxSpd=55;
 var autoOn=true,manualOn=false,manualTmr=null,autoResumeMs=5000;
 var energy=1.0;
 
-// ===== WORLD STATE (rebuilt every heartbeat from frame) =====
+// ===== WORLD STATE =====
 var world={
-  floorPct:[0,0,0,0,0],
-  floorTotal:0,
-  cliff:false,
-  cliffCols:[false,false,false,false,false],
-  blocked:false,
-  clearest:2,
-  motD:0,
-  motDirBias:0
+  floorPct:[0,0,0,0,0],floorTotal:0,
+  cliff:false,cliffCols:[false,false,false,false,false],
+  blocked:false,clearest:2,motD:0,motDirBias:0,avgEdge:0
 };
 
 // ===== FLOOR LEARNING =====
-var floorRef=null;
-var floorSamples={r:[],g:[],b:[]};
-var floorFrames=0;
-var FLOOR_TOL=2.5;
-var CLIFF_FLOOR_MIN=0.25;
-var STUCK_THRESH=6;
+var floorRef=null,floorSamples={r:[],g:[],b:[]},floorFrames=0;
+var FLOOR_TOL=2.5,CLIFF_FLOOR_MIN=0.25,STUCK_THRESH=6;
 
 function computeFloorRef(){
   function stats(arr){
@@ -231,16 +215,15 @@ function computeFloorRef(){
     for(var i=0;i<n;i++)sum+=arr[i];
     var mean=sum/n,sqSum=0;
     for(var i=0;i<n;i++)sqSum+=(arr[i]-mean)*(arr[i]-mean);
-    return{m:mean,s:Math.max(Math.sqrt(sqSum/n),8)};
+    return{m:mean,s:Math.max(Math.sqrt(sqSum/n),12)};
   }
   floorRef={r:stats(floorSamples.r),g:stats(floorSamples.g),b:stats(floorSamples.b)};
 }
 
 function isFloor(r,g,b){
   if(!floorRef)return false;
-  return Math.abs(r-floorRef.r.m)<FLOOR_TOL*floorRef.r.s&&
-         Math.abs(g-floorRef.g.m)<FLOOR_TOL*floorRef.g.s&&
-         Math.abs(b-floorRef.b.m)<FLOOR_TOL*floorRef.b.s;
+  var dr=(r-floorRef.r.m)/floorRef.r.s,dg=(g-floorRef.g.m)/floorRef.g.s,db=(b-floorRef.b.m)/floorRef.b.s;
+  return Math.sqrt(dr*dr+dg*dg+db*db)<FLOOR_TOL;
 }
 
 // ===== NAV STATE =====
@@ -251,10 +234,30 @@ var prevGray=null,prevFullGray=null;
 
 // ===== MAP =====
 var MS=64,map=new Int8Array(MS*MS),mapX=MS/2,mapY=MS/2,heading=0;
-var mapCv=document.getElementById('mapCv'),mapCtx=mapCv.getContext('2d');
-var mapTrail=[],mapMarkers=[],mapParticles=[];
-var cellIcons=new Uint8Array(MS*MS);
-var mapPulse=0;
+var scene3d,cam3d,ren3d,ptGeo,ptPos,ptCol,ptCount=0,MAX_PTS=40000;
+var roverMark,camA=0,camP=0.9,camD=20,drag3d=false,dragS={x:0,y:0};
+var spinPaused=false,wasDrag3d=false;
+
+// ===== ML =====
+var mlModel=null,mlDetections=[];
+function loadScript(url,cb){var s=document.createElement('script');s.src=url;s.onload=cb;s.onerror=function(){addLog('CDN load failed');};document.head.appendChild(s);}
+function initML(){
+  addLog('Loading ML vision...');
+  loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js',function(){
+    loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js',function(){
+      if(!window.cocoSsd){addLog('COCO-SSD not available');return;}
+      cocoSsd.load({base:'lite_mobilenet_v2'}).then(function(model){
+        mlModel=model;
+        addLog('ML VISION ONLINE',1);
+        say('Object detection online!','system');
+      }).catch(function(e){addLog('ML: '+e.message);});
+    });
+  });
+}
+setInterval(function(){
+  if(!mlModel||!feed.naturalWidth)return;
+  mlModel.detect(feed,6,0.3).then(function(r){mlDetections=r;}).catch(function(){});
+},800);
 
 // ===== QUEST =====
 var qState={explored:0,cliffs:0,social:0,motions:0,motionT:0,
@@ -278,7 +281,7 @@ var cmdTimer=null;
 function startCmd(){if(cmdTimer)return;sendDrive();cmdTimer=setInterval(sendDrive,25);}
 function stopCmd(){if(cmdTimer){clearInterval(cmdTimer);cmdTimer=null;}jT=0;jS=0;sendDrive();}
 
-// ===== SOUND (event-driven, precise) =====
+// ===== SOUND =====
 var SND={ctx:null,muted:false,last:0,
   init:function(){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},
   chirp:function(f0,f1,dur,type,vol){
@@ -307,53 +310,26 @@ var SND={ctx:null,muted:false,last:0,
 document.addEventListener('click',function(){if(!SND.ctx){SND.init();SND.play('boot');}});
 document.addEventListener('touchstart',function(){if(!SND.ctx)SND.init();});
 
-// ===== EYES (Anki-style, shape only) =====
-var eyeEls=document.querySelectorAll('.eye');
-var eyeMood='normal';
-
+// ===== EYES =====
+var eyeEls=document.querySelectorAll('.eye'),eyeMood='normal';
 function setEyes(expr){
-  eyeMood=expr;
-  var L=eyeEls[0],R=eyeEls[1];
+  eyeMood=expr;var L=eyeEls[0],R=eyeEls[1];
   L.style.transform=R.style.transform='';
   switch(expr){
-    case 'normal':
-      L.style.height=R.style.height='32px';
-      L.style.width=R.style.width='42px';
-      L.style.borderRadius=R.style.borderRadius='8px';break;
-    case 'curious':
-      L.style.height='38px';R.style.height='26px';
-      L.style.width=R.style.width='42px';
-      L.style.borderRadius='10px';R.style.borderRadius='8px';break;
-    case 'alert':
-      L.style.height=R.style.height='44px';
-      L.style.width=R.style.width='44px';
-      L.style.borderRadius=R.style.borderRadius='12px';break;
-    case 'happy':
-      L.style.height=R.style.height='14px';
-      L.style.width=R.style.width='44px';
-      L.style.borderRadius=R.style.borderRadius='10px 10px 20px 20px';break;
-    case 'cautious':
-      L.style.height=R.style.height='20px';
-      L.style.width=R.style.width='42px';
-      L.style.borderRadius=R.style.borderRadius='6px';break;
+    case 'normal':L.style.height=R.style.height='32px';L.style.width=R.style.width='42px';L.style.borderRadius=R.style.borderRadius='8px';break;
+    case 'curious':L.style.height='38px';R.style.height='26px';L.style.width=R.style.width='42px';L.style.borderRadius='10px';R.style.borderRadius='8px';break;
+    case 'alert':L.style.height=R.style.height='44px';L.style.width=R.style.width='44px';L.style.borderRadius=R.style.borderRadius='12px';break;
+    case 'happy':L.style.height=R.style.height='14px';L.style.width=R.style.width='44px';L.style.borderRadius=R.style.borderRadius='10px 10px 20px 20px';break;
+    case 'cautious':L.style.height=R.style.height='20px';L.style.width=R.style.width='42px';L.style.borderRadius=R.style.borderRadius='6px';break;
   }
 }
-
-// Eye tracking: shift whole eye based on steering
 setInterval(function(){
   var dx=jS*0.12,dy=-jT*0.1;
-  eyeEls.forEach(function(e){
-    var base=eyeMood==='curious'?'':'';
-    e.style.transform='translate('+dx+'px,'+dy+'px)';
-  });
+  eyeEls.forEach(function(e){e.style.transform='translate('+dx+'px,'+dy+'px)';});
 },80);
-
-// Blink
 setInterval(function(){
-  if(Math.random()<0.15){
-    eyeEls.forEach(function(e){e.style.height='2px';});
-    setTimeout(function(){setEyes(eyeMood);},140);
-  }
+  if(Math.random()<0.15){eyeEls.forEach(function(e){e.style.height='2px';});
+    setTimeout(function(){setEyes(eyeMood);},140);}
 },2800);
 
 // ===== DIALOGUE =====
@@ -464,9 +440,14 @@ function renderQ(){
 }
 renderQ();
 
-// ===== TUNER =====
+// ===== TOGGLES =====
 function toggleTuner(){
   var b=document.getElementById('tunerBody'),a=document.getElementById('tunerArrow');
+  if(b.style.display==='none'){b.style.display='block';a.innerHTML='&#9662;';}
+  else{b.style.display='none';a.innerHTML='&#9656;';}
+}
+function toggleQuests(){
+  var b=document.getElementById('questBody'),a=document.getElementById('questArrow');
   if(b.style.display==='none'){b.style.display='block';a.innerHTML='&#9662;';}
   else{b.style.display='none';a.innerHTML='&#9656;';}
 }
@@ -525,13 +506,6 @@ document.getElementById('snapBtn').onclick=function(){
     var a=document.createElement('a');a.download='explorer-'+Date.now()+'.png';a.href=sc.toDataURL();a.click();addLog('SNAP SAVED',1);}
   catch(e){addLog('SNAP FAILED');}};
 
-// ===== VIEW MODE =====
-document.getElementById('modeRow').onclick=function(e){if(!e.target.dataset.m)return;
-  viewMode=e.target.dataset.m;
-  this.querySelectorAll('.btn').forEach(function(b){b.classList.toggle('on',b.dataset.m===viewMode);});
-  if(viewMode==='raw'){feed.style.display='block';cv.style.display='none';}
-  else{feed.style.display='none';cv.style.display='block';}};
-
 // ===== LOG =====
 var logP=document.getElementById('logPanel');
 function addLog(m,hi,type){var d=document.createElement('div');
@@ -546,62 +520,97 @@ function poll(){fetch('/status').then(function(r){return r.json();}).then(functi
 }).catch(function(){document.getElementById('connStatus').textContent='NO LINK';});}
 setInterval(poll,3000);
 
-// ===== MAP =====
-function resetMap(){map.fill(0);mapX=MS/2;mapY=MS/2;heading=0;
-  mapTrail=[];mapMarkers=[];mapParticles=[];cellIcons.fill(0);
-  mapMarkers.push({x:MS/2,y:MS/2,icon:'⌂',label:'HOME',color:'#44CC66'});}
-function drawMap(){
-  var w=mapCv.width,h=mapCv.height,s=w/MS;
-  mapCtx.fillStyle='#0D0D0D';mapCtx.fillRect(0,0,w,h);
-  mapPulse=(mapPulse+0.05)%(Math.PI*2);
-  mapCtx.fillStyle='rgba(255,255,255,0.03)';
-  for(var gy=0;gy<MS;gy+=4)for(var gx=0;gx<MS;gx+=4){
-    if(map[gy*MS+gx]===0)mapCtx.fillRect(gx*s+s/2,gy*s+s/2,1,1);}
-  var icons=['·','•','✧'];
-  for(var my=0;my<MS;my++)for(var mx=0;mx<MS;mx++){
-    var v=map[my*MS+mx];if(v===0)continue;
-    if(v>0){var ci=cellIcons[my*MS+mx];
-      if(ci===0)ci=cellIcons[my*MS+mx]=Math.floor(Math.random()*3)+1;
-      mapCtx.fillStyle='rgba(0,200,80,0.35)';mapCtx.font='4px monospace';
-      mapCtx.fillText(icons[ci-1],mx*s+1,my*s+s-1);
-    }else{mapCtx.fillStyle='rgba(255,60,60,0.7)';mapCtx.font='5px monospace';
-      mapCtx.fillText('✕',mx*s,my*s+s-1);}
-  }
-  for(var ti=0;ti<mapTrail.length;ti++){
-    var tr=mapTrail[ti],alpha=0.15+(ti/mapTrail.length)*0.5;
-    mapCtx.fillStyle='rgba(255,106,0,'+alpha+')';
-    mapCtx.beginPath();mapCtx.arc(tr.x*s,tr.y*s,1.5,0,Math.PI*2);mapCtx.fill();}
-  mapParticles=mapParticles.filter(function(p){return p.age<15;});
-  mapParticles.forEach(function(p){p.age++;p.x+=p.dx;p.y+=p.dy;
-    mapCtx.fillStyle='rgba(255,200,50,'+(1-p.age/15)+')';
-    mapCtx.beginPath();mapCtx.arc(p.x*s,p.y*s,(1-p.age/15)*2,0,Math.PI*2);mapCtx.fill();});
-  mapCtx.font='7px monospace';
-  mapMarkers.forEach(function(mk){mapCtx.fillStyle=mk.color;mapCtx.fillText(mk.icon,mk.x*s-3,mk.y*s+3);});
-  quests.forEach(function(q){if(q.on&&q.id==='watchdog'){
-    mapCtx.fillStyle='gold';mapCtx.font='8px monospace';
-    mapCtx.fillText('★',qState.startX*s-4,qState.startY*s+3);}});
-  var px=mapX*s,py=mapY*s,pulse=1+Math.sin(mapPulse)*0.15;
-  mapCtx.save();mapCtx.translate(px,py);mapCtx.rotate(heading);mapCtx.scale(pulse,pulse);
-  mapCtx.fillStyle='#FF6A00';mapCtx.beginPath();
-  mapCtx.moveTo(0,-5);mapCtx.lineTo(-3,4);mapCtx.lineTo(3,4);mapCtx.closePath();mapCtx.fill();
-  mapCtx.restore();
-  var hx=px+Math.sin(heading)*10,hy=py-Math.cos(heading)*10;
-  mapCtx.strokeStyle='#FF6A00';mapCtx.lineWidth=1;mapCtx.globalAlpha=0.5;
-  mapCtx.beginPath();mapCtx.moveTo(px,py);mapCtx.lineTo(hx,hy);mapCtx.stroke();
-  mapCtx.globalAlpha=1;
-  document.getElementById('mapPos').textContent=Math.round(mapX)+','+Math.round(mapY);
-  document.getElementById('mapHdg').textContent=Math.round(heading*180/Math.PI);
+// ===== 3D MAP =====
+function resetMap(){
+  map.fill(0);mapX=MS/2;mapY=MS/2;heading=0;
+  ptCount=0;if(ptGeo){ptGeo.setDrawRange(0,0);}
 }
 
-// ===== BUILD WORLD STATE (from nav frame) =====
+function init3D(){
+  var c=document.getElementById('map3d');
+  if(!window.THREE){c.textContent='Loading 3D...';setTimeout(init3D,500);return;}
+  c.textContent='';
+  scene3d=new THREE.Scene();
+  scene3d.fog=new THREE.FogExp2(0x080808,0.025);
+  cam3d=new THREE.PerspectiveCamera(50,c.clientWidth/Math.max(c.clientHeight,1),0.1,200);
+  ren3d=new THREE.WebGLRenderer({antialias:true});
+  ren3d.setSize(c.clientWidth,c.clientHeight);
+  ren3d.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  ren3d.setClearColor(0x080808);
+  c.appendChild(ren3d.domElement);
+
+  ptPos=new Float32Array(MAX_PTS*3);ptCol=new Float32Array(MAX_PTS*3);
+  ptGeo=new THREE.BufferGeometry();
+  ptGeo.setAttribute('position',new THREE.BufferAttribute(ptPos,3));
+  ptGeo.setAttribute('color',new THREE.BufferAttribute(ptCol,3));
+  ptGeo.setDrawRange(0,0);
+  scene3d.add(new THREE.Points(ptGeo,new THREE.PointsMaterial({size:0.15,vertexColors:true,transparent:true,opacity:0.85,sizeAttenuation:true})));
+  scene3d.add(new THREE.GridHelper(32,64,0x111111,0x0a0a0a));
+
+  var rGeo=new THREE.ConeGeometry(0.25,0.7,4);rGeo.rotateX(Math.PI/2);
+  roverMark=new THREE.Mesh(rGeo,new THREE.MeshBasicMaterial({color:0xFF6A00}));
+  scene3d.add(roverMark);
+  var bGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0.1,-3)]);
+  roverMark.add(new THREE.Line(bGeo,new THREE.LineBasicMaterial({color:0x3388FF,transparent:true,opacity:0.4})));
+
+  for(var i=0;i<15;i++){if(ptCount>=MAX_PTS)break;var idx=ptCount*3;
+    ptPos[idx]=(Math.random()-0.5)*0.4;ptPos[idx+1]=Math.random()*0.3;ptPos[idx+2]=(Math.random()-0.5)*0.4;
+    ptCol[idx]=0.3;ptCol[idx+1]=1.0;ptCol[idx+2]=0.3;ptCount++;}
+  ptGeo.attributes.position.needsUpdate=true;ptGeo.attributes.color.needsUpdate=true;ptGeo.setDrawRange(0,ptCount);
+
+  var el=ren3d.domElement;
+  el.addEventListener('mousedown',function(e){drag3d=true;wasDrag3d=false;dragS={x:e.clientX,y:e.clientY};});
+  window.addEventListener('mousemove',function(e){if(!drag3d)return;
+    if(Math.abs(e.clientX-dragS.x)>3||Math.abs(e.clientY-dragS.y)>3)wasDrag3d=true;
+    camA+=(e.clientX-dragS.x)*0.008;camP=Math.max(0.15,Math.min(1.4,camP-(e.clientY-dragS.y)*0.008));
+    dragS={x:e.clientX,y:e.clientY};});
+  window.addEventListener('mouseup',function(){drag3d=false;});
+  el.addEventListener('click',function(){if(!wasDrag3d)spinPaused=!spinPaused;});
+  el.addEventListener('wheel',function(e){camD=Math.max(5,Math.min(50,camD+e.deltaY*0.03));e.preventDefault();},{passive:false});
+  el.addEventListener('touchstart',function(e){if(e.touches.length===1){drag3d=true;wasDrag3d=false;dragS={x:e.touches[0].clientX,y:e.touches[0].clientY};}},{passive:true});
+  el.addEventListener('touchmove',function(e){if(!drag3d||e.touches.length!==1)return;wasDrag3d=true;
+    camA+=(e.touches[0].clientX-dragS.x)*0.008;camP=Math.max(0.15,Math.min(1.4,camP-(e.touches[0].clientY-dragS.y)*0.008));
+    dragS={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+  el.addEventListener('touchend',function(){drag3d=false;if(!wasDrag3d)spinPaused=!spinPaused;},{passive:true});
+
+  if(window.ResizeObserver){new ResizeObserver(function(){if(!ren3d)return;
+    cam3d.aspect=c.clientWidth/Math.max(c.clientHeight,1);cam3d.updateProjectionMatrix();
+    ren3d.setSize(c.clientWidth,c.clientHeight);}).observe(c);}
+  anim3D();
+}
+
+function anim3D(){
+  requestAnimationFrame(anim3D);if(!scene3d)return;
+  if(!drag3d&&!spinPaused)camA+=0.002;
+  var tx=(mapX-MS/2)*0.5,tz=(mapY-MS/2)*0.5;
+  cam3d.position.set(tx+Math.cos(camA)*camD*Math.cos(camP),camD*Math.sin(camP),tz+Math.sin(camA)*camD*Math.cos(camP));
+  cam3d.lookAt(tx,0,tz);
+  if(roverMark){roverMark.position.set(tx,0.4,tz);roverMark.rotation.y=-heading;}
+  ren3d.render(scene3d,cam3d);
+}
+
+function addPts3D(gx,gy,type){
+  var bx=(gx-MS/2)*0.5,bz=(gy-MS/2)*0.5;
+  var n=type==='obstacle'?10:type==='cliff'?8:5;
+  for(var i=0;i<n;i++){if(ptCount>=MAX_PTS)return;var idx=ptCount*3;
+    ptPos[idx]=bx+(Math.random()-0.5)*0.45;
+    ptPos[idx+1]=type==='obstacle'?Math.random()*0.5+0.05:Math.random()*0.06;
+    ptPos[idx+2]=bz+(Math.random()-0.5)*0.45;
+    if(type==='floor'){ptCol[idx]=0.05+Math.random()*0.1;ptCol[idx+1]=0.5+Math.random()*0.3;ptCol[idx+2]=0.7+Math.random()*0.3;}
+    else if(type==='obstacle'){ptCol[idx]=0.7+Math.random()*0.3;ptCol[idx+1]=0.1+Math.random()*0.1;ptCol[idx+2]=0.05;}
+    else{ptCol[idx]=1.0;ptCol[idx+1]=0.7+Math.random()*0.3;ptCol[idx+2]=0.0;}
+    ptCount++;}
+  ptGeo.attributes.position.needsUpdate=true;ptGeo.attributes.color.needsUpdate=true;ptGeo.setDrawRange(0,ptCount);
+}
+
+// ===== BUILD WORLD STATE =====
 function buildWorld(d,gray){
   var colW=NW/5,startRow=Math.floor(NH*0.33);
   var colFloor=[0,0,0,0,0],colTotal=[0,0,0,0,0];
   for(var y=startRow;y<NH;y++){
     for(var x=0;x<NW;x++){
       var ci=Math.min(4,Math.floor(x/colW));
-      var pi=(y*NW+x)*4;
-      colTotal[ci]++;
+      var pi=(y*NW+x)*4;colTotal[ci]++;
       if(isFloor(d[pi],d[pi+1],d[pi+2]))colFloor[ci]++;
     }
   }
@@ -612,7 +621,48 @@ function buildWorld(d,gray){
   }
   world.floorTotal=totalP>0?totalF/totalP:0;
 
-  // Cliff: bottom rows have very little floor
+  // Edge density per column (Sobel on nav grayscale)
+  var colEdge=[0,0,0,0,0],colET=[0,0,0,0,0];
+  for(var ey=startRow+1;ey<NH-1;ey++){
+    for(var ex=1;ex<NW-1;ex++){
+      var eci=Math.min(4,Math.floor(ex/colW));
+      var gx=-gray[(ey-1)*NW+ex-1]-2*gray[ey*NW+ex-1]-gray[(ey+1)*NW+ex-1]
+             +gray[(ey-1)*NW+ex+1]+2*gray[ey*NW+ex+1]+gray[(ey+1)*NW+ex+1];
+      var gy2=-gray[(ey-1)*NW+ex-1]-2*gray[(ey-1)*NW+ex]-gray[(ey-1)*NW+ex+1]
+              +gray[(ey+1)*NW+ex-1]+2*gray[(ey+1)*NW+ex]+gray[(ey+1)*NW+ex+1];
+      colET[eci]++;
+      if(Math.abs(gx)+Math.abs(gy2)>60)colEdge[eci]++;
+    }
+  }
+  var totalEdge=0;
+  for(var ec=0;ec<5;ec++){
+    var ePct=colET[ec]>0?colEdge[ec]/colET[ec]:0;
+    totalEdge+=ePct;
+    // High floor + high edges = floor-colored object
+    if(ePct>0.15&&world.floorPct[ec]>0.4) world.floorPct[ec]*=0.5;
+  }
+  world.avgEdge=totalEdge/5;
+
+  // ML detections reduce floor confidence
+  if(mlDetections.length>0){
+    var fw=feed.naturalWidth||320,fh=feed.naturalHeight||240;
+    mlDetections.forEach(function(det){
+      var objBot=(det.bbox[1]+det.bbox[3])/fh;
+      var objCX=(det.bbox[0]+det.bbox[2]/2)/fw;
+      var objW=det.bbox[2]/fw;
+      if(objBot>0.4&&objW>0.08){
+        var col=Math.min(4,Math.floor(objCX*5));
+        world.floorPct[col]*=0.3;
+      }
+    });
+  }
+
+  // Recalculate total after adjustments
+  totalF=0;totalP=0;
+  for(var rc=0;rc<5;rc++){totalF+=world.floorPct[rc];totalP++;}
+  world.floorTotal=totalF/totalP;
+
+  // Cliff
   var bottomFloor=0,bottomTotal=0;
   for(var by=NH-10;by<NH;by++){
     for(var bx=Math.floor(NW*0.2);bx<Math.floor(NW*0.8);bx++){
@@ -620,10 +670,8 @@ function buildWorld(d,gray){
       if(isFloor(d[bpi],d[bpi+1],d[bpi+2]))bottomFloor++;
     }
   }
-  var bottomPct=bottomTotal>0?bottomFloor/bottomTotal:0;
-  world.cliff=bottomPct<CLIFF_FLOOR_MIN;
+  world.cliff=bottomTotal>0?(bottomFloor/bottomTotal)<CLIFF_FLOOR_MIN:false;
 
-  // Per-column cliff
   for(var cc=0;cc<5;cc++){
     var cf=0,ct=0;
     for(var cy=NH-10;cy<NH;cy++){
@@ -635,19 +683,14 @@ function buildWorld(d,gray){
     world.cliffCols[cc]=ct>0?(cf/ct)<CLIFF_FLOOR_MIN:false;
   }
 
-  // Blocked: center column low floor
   world.blocked=world.floorPct[2]<0.3;
-
-  // Clearest column
   var best=0,bestI=2;
   for(var bc=0;bc<5;bc++){if(world.floorPct[bc]>best){best=world.floorPct[bc];bestI=bc;}}
   world.clearest=bestI;
 
-  // Motion
   world.motD=0;
   if(prevGray&&prevGray.length===gray.length){
-    var tot=0;
-    for(var mi=0;mi<gray.length;mi++)if(Math.abs(gray[mi]-prevGray[mi])>20)tot++;
+    var tot=0;for(var mi=0;mi<gray.length;mi++)if(Math.abs(gray[mi]-prevGray[mi])>20)tot++;
     world.motD=tot/gray.length*100;
   }
   if(prevGray&&prevGray.length===gray.length){
@@ -658,100 +701,75 @@ function buildWorld(d,gray){
   }
 }
 
-// ===== DECIDE (FSM driven by world state) =====
+// ===== DECIDE =====
 var lastDecisionLog=0;
 function decide(){
-  var t=0,s=0;
-  var dirs=['L','LC','C','RC','R'];
+  var t=0,s=0,dirs=['L','LC','C','RC','R'];
 
-  // Update telemetry
   document.getElementById('tSt').textContent=aState;
   document.getElementById('tT').textContent=jT;
   document.getElementById('tS').textContent=jS;
   document.getElementById('tFloor').textContent=Math.round(world.floorTotal*100)+'%';
   document.getElementById('tClear').textContent=dirs[world.clearest]+' '+Math.round(world.floorPct[world.clearest]*100)+'%';
+  document.getElementById('tEdge').textContent=Math.round(world.avgEdge*100);
   document.getElementById('tMot').textContent=Math.round(world.motD);
+  document.getElementById('tML').textContent=mlDetections.length>0?mlDetections.map(function(d){return d.class;}).join(','):'--';
 
-  // Eyes follow nav state
   if(aState==='CLIFF')setEyes('alert');
   else if(aState==='AVOID')setEyes('cautious');
   else if(stuckN>STUCK_THRESH)setEyes('cautious');
-  else if(aState==='EXPLORE'||aState==='FWD')setEyes('curious');
+  else if(aState==='FWD')setEyes('curious');
   else setEyes('normal');
 
-  // State label
   var stateNames={LEARN:'Learning floor...',SCAN:'Scanning...',FWD:'Exploring',
     CLIFF:'Edge detected!',AVOID:'Going around',REV:'Reversing',IDLE:'Idle'};
   document.getElementById('stateLabel').textContent=stateNames[aState]||aState;
 
-  // Energy
   if(jT!==0||jS!==0)energy=Math.max(0,energy-0.002);
   else energy=Math.min(1,energy+0.005);
   document.getElementById('energyBar').style.width=(energy*100)+'%';
 
   if(world.motD<0.5&&aState==='FWD')stuckN++;else if(aState==='FWD')stuckN=0;
 
-  // CLIFF: stop, turn in place toward clearest column
   if(aState==='CLIFF'){
-    t=0;s=turnDir*25;
-    cliffTicks--;
+    t=0;s=turnDir*25;cliffTicks--;
     if(cliffTicks<=0){
       if(world.cliff){
-        if(cliffFlips>=2){
-          t=-20;s=0;cliffTicks=3;
-          sayThrottled('stuck',8000);SND.play('stuck');
-        }else{
-          turnDir=-turnDir;cliffTicks=5;cliffFlips++;
-        }
-      }else{
-        aState='SCAN';cliffFlips=0;scanTicks=0;
-        SND.play('clear');sayThrottled('clear',5000);
-      }
+        if(cliffFlips>=2){t=-20;s=0;cliffTicks=3;sayThrottled('stuck',8000);SND.play('stuck');}
+        else{turnDir=-turnDir;cliffTicks=5;cliffFlips++;}
+      }else{aState='SCAN';cliffFlips=0;scanTicks=0;SND.play('clear');sayThrottled('clear',5000);}
     }
   }
-  // Cliff entry
   else if(world.cliff&&aState!=='LEARN'){
     aState='CLIFF';cliffTicks=5;cliffFlips=0;
-    turnDir=world.clearest<2?-1:1;
-    t=0;s=0;
-    SND.play('cliff');sayThrottled('cliff',3000);
-    qState.cliffs++;
-    if(mapMarkers.length<30)mapMarkers.push({x:mapX,y:mapY,icon:'⚠',label:'EDGE',color:'#FF3333'});
-    addLog('CLIFF: bottom '+Math.round((1-world.floorTotal)*100)+'% non-floor, turning '+dirs[world.clearest]);
+    turnDir=world.clearest<2?-1:1;t=0;s=0;
+    SND.play('cliff');sayThrottled('cliff',3000);qState.cliffs++;
+    addPts3D(Math.round(mapX),Math.round(mapY),'cliff');
+    addLog('CLIFF: turning '+dirs[world.clearest]);
   }
-  // SCAN: turn until we find a clear direction
   else if(aState==='SCAN'){
     t=0;s=20*turnDir;scanTicks++;
     if(world.floorPct[2]>0.5&&!world.cliff){aState='FWD';stuckN=0;scanTicks=0;}
     if(scanTicks>16){turnDir=-turnDir;scanTicks=0;}
   }
-  // FWD: explore, steer toward best column
   else if(aState==='FWD'){
     if(world.blocked||world.cliff){
       aState='AVOID';
       turnDir=world.clearest<2?-1:world.clearest>2?1:(Math.random()>0.5?1:-1);
       sayThrottled('obstacle',5000);
     }
-    else if(stuckN>STUCK_THRESH){
-      aState='REV';
-      sayThrottled('stuck',8000);SND.play('stuck');
-    }
+    else if(stuckN>STUCK_THRESH){aState='REV';sayThrottled('stuck',8000);SND.play('stuck');}
     else{
-      t=30;
-      // Steer toward clearest column
-      var steer=(world.clearest-2)*8;
-      // Bias away from low-floor sides
+      t=30;var steer=(world.clearest-2)*8;
       if(world.floorPct[0]<0.3&&world.floorPct[4]>0.5)steer+=6;
       else if(world.floorPct[4]<0.3&&world.floorPct[0]>0.5)steer-=6;
       s=steer;
     }
   }
-  // AVOID: steer around obstacle
   else if(aState==='AVOID'){
     t=-10;s=35*turnDir;
     if(world.floorPct[2]>0.5&&!world.cliff&&!world.blocked){aState='FWD';stuckN=0;}
   }
-  // REV: back up then scan
   else if(aState==='REV'){
     t=-25;s=20*turnDir;stuckN--;
     if(stuckN<=0||(!world.blocked&&world.floorPct[2]>0.4)){aState='SCAN';stuckN=0;scanTicks=0;}
@@ -759,16 +777,12 @@ function decide(){
   else{aState='SCAN';scanTicks=0;}
 
   jT=t;jS=s;
-
-  // Log decisions periodically
-  if(Date.now()-lastDecisionLog>3000){
-    lastDecisionLog=Date.now();
+  if(Date.now()-lastDecisionLog>3000){lastDecisionLog=Date.now();
     var pcts=world.floorPct.map(function(p){return Math.round(p*100);});
-    addLog(aState+' floor:['+pcts.join(',')+'] clear:'+dirs[world.clearest]);
-  }
+    addLog(aState+' floor:['+pcts.join(',')+'] edge:'+Math.round(world.avgEdge*100)+'% clear:'+dirs[world.clearest]);}
 }
 
-// ===== HEARTBEAT (500ms) =====
+// ===== HEARTBEAT (200ms) =====
 setInterval(function(){
   if(!feed.naturalWidth)return;
   try{navCtx.drawImage(feed,0,0,NW,NH);}catch(e){return;}
@@ -776,122 +790,115 @@ setInterval(function(){
   var gray=new Uint8Array(NW*NH);
   for(var i=0;i<d.length;i+=4)gray[i>>2]=(d[i]*77+d[i+1]*150+d[i+2]*29)>>8;
 
-  // LEARN: collect floor color samples
   if(aState==='LEARN'){
-    for(var fy=NH-12;fy<NH;fy++)for(var fx=Math.floor(NW*0.2);fx<Math.floor(NW*0.8);fx++){
+    for(var fy=Math.floor(NH*0.4);fy<NH;fy++)for(var fx=Math.floor(NW*0.1);fx<Math.floor(NW*0.9);fx++){
       var fi=(fy*NW+fx)*4;
       floorSamples.r.push(d[fi]);floorSamples.g.push(d[fi+1]);floorSamples.b.push(d[fi+2]);
     }
     floorFrames++;
-    if(floorFrames>=5){
-      computeFloorRef();
-      aState='SCAN';scanTicks=0;
-      say('Floor learned! RGB('+Math.round(floorRef.r.m)+','+Math.round(floorRef.g.m)+','+Math.round(floorRef.b.m)+') ±'+Math.round(floorRef.r.s),'system');
-      addLog('FLOOR: R='+Math.round(floorRef.r.m)+'±'+Math.round(floorRef.r.s)+
-        ' G='+Math.round(floorRef.g.m)+'±'+Math.round(floorRef.g.s)+
-        ' B='+Math.round(floorRef.b.m)+'±'+Math.round(floorRef.b.s));
+    if(floorFrames>=10){
+      computeFloorRef();aState='SCAN';scanTicks=0;
+      say('Floor learned! RGB('+Math.round(floorRef.r.m)+','+Math.round(floorRef.g.m)+','+Math.round(floorRef.b.m)+') std:'+Math.round(floorRef.r.s),'system');
+      addLog('FLOOR: R='+Math.round(floorRef.r.m)+'+-'+Math.round(floorRef.r.s)+
+        ' G='+Math.round(floorRef.g.m)+'+-'+Math.round(floorRef.g.s)+
+        ' B='+Math.round(floorRef.b.m)+'+-'+Math.round(floorRef.b.s));
     }
-    jT=0;jS=0;drawMap();prevGray=gray;return;
+    jT=0;jS=0;prevGray=gray;return;
   }
 
-  // Build world from frame
   buildWorld(d,gray);
-
-  // Motion tracking for quests
   if(world.motD>10&&Date.now()-qState.motionT>5000){qState.motions++;qState.motionT=Date.now();}
 
-  // Update map
   heading+=jS*0.003;var dist=jT*0.006;
   mapX+=dist*Math.sin(heading);mapY-=dist*Math.cos(heading);
   mapX=Math.max(1,Math.min(MS-2,mapX));mapY=Math.max(1,Math.min(MS-2,mapY));
   var mi=Math.round(mapY)*MS+Math.round(mapX);
-  if(mi>=0&&mi<MS*MS){
-    if(map[mi]===0){map[mi]=1;
-      for(var pi=0;pi<3;pi++)mapParticles.push({x:mapX,y:mapY,age:0,
-        dx:(Math.random()-0.5)*0.4,dy:(Math.random()-0.5)*0.4});}
-  }
+  if(mi>=0&&mi<MS*MS){if(map[mi]===0){map[mi]=1;addPts3D(Math.round(mapX),Math.round(mapY),'floor');}}
   if(world.blocked){var ox=mapX+Math.sin(heading)*2,oy=mapY-Math.cos(heading)*2;
-    var oi=Math.round(oy)*MS+Math.round(ox);if(oi>=0&&oi<MS*MS)map[oi]=-1;}
-  mapTrail.push({x:mapX,y:mapY});if(mapTrail.length>30)mapTrail.shift();
+    var oi=Math.round(oy)*MS+Math.round(ox);
+    if(oi>=0&&oi<MS*MS){if(map[oi]!==-1)addPts3D(Math.round(ox),Math.round(oy),'obstacle');map[oi]=-1;}}
 
-  // Auto-mode decisions
+  document.getElementById('mapPos').textContent=Math.round(mapX)+','+Math.round(mapY);
+  document.getElementById('mapHdg').textContent=Math.round(heading*180/Math.PI);
+
   if(autoOn&&!manualOn){decide();startCmd();}
-
-  prevGray=gray;
-  checkQuests();drawMap();
+  prevGray=gray;checkQuests();
 },200);
 
-// ===== ROVER VIEW (12fps) =====
+// ===== ROVER VIEW (12fps, point cloud + edges + ML boxes) =====
+var rvF=0;
 setInterval(function(){
-  if(viewMode!=='rover'||!feed.naturalWidth||!floorRef)return;
+  if(!feed.naturalWidth||!floorRef)return;
   var w=feed.naturalWidth,h=feed.naturalHeight;
   if(cv.width!==w)cv.width=w;if(cv.height!==h)cv.height=h;
   try{ctx.drawImage(feed,0,0);}catch(e){return;}
+  var src=ctx.getImageData(0,0,w,h),sd=src.data;
 
-  var im=ctx.getImageData(0,0,w,h),d=im.data;
-
-  // Compute grayscale from ORIGINAL frame (before tinting) for motion diff
   var curGray=new Uint8Array(w*h);
-  for(var gi=0;gi<d.length;gi+=4)curGray[gi>>2]=(d[gi]*77+d[gi+1]*150+d[gi+2]*29)>>8;
+  for(var gi=0;gi<sd.length;gi+=4)curGray[gi>>2]=(sd[gi]*77+sd[gi+1]*150+sd[gi+2]*29)>>8;
 
-  // Floor/non-floor classification — strong color blend
-  for(var y=0;y<h;y++){
-    for(var x=0;x<w;x++){
-      var pi=(y*w+x)*4;
-      if(isFloor(d[pi],d[pi+1],d[pi+2])){
-        d[pi]=(d[pi]*0.35)|0;
-        d[pi+1]=Math.min(255,(d[pi+1]*0.35+160))|0;
-        d[pi+2]=(d[pi+2]*0.35)|0;
-      }else{
-        d[pi]=Math.min(255,(d[pi]*0.35+160))|0;
-        d[pi+1]=(d[pi+1]*0.35)|0;
-        d[pi+2]=(d[pi+2]*0.35)|0;
+  // Point cloud on black
+  var out=ctx.createImageData(w,h),od=out.data;
+  rvF++;
+  for(var y=0;y<h;y+=2){
+    for(var x=0;x<w;x+=2){
+      if((x*7+y*13+rvF)%5===0)continue;
+      var si=(y*w+x)*4;
+      var br=(sd[si]*77+sd[si+1]*150+sd[si+2]*29)>>8;
+      var bf=0.4+br/425;
+      var mot=prevFullGray&&Math.abs(curGray[y*w+x]-prevFullGray[y*w+x])>25;
+      var r,g,b;
+      if(mot){r=255;g=240;b=50;}
+      else if(isFloor(sd[si],sd[si+1],sd[si+2])){r=(30*bf)|0;g=Math.min(255,(200*bf)|0);b=(100*bf)|0;}
+      else{r=Math.min(255,(200*bf)|0);g=(40*bf)|0;b=(30*bf)|0;}
+      for(var dy=0;dy<2&&y+dy<h;dy++)for(var dx=0;dx<2&&x+dx<w;dx++){
+        var di=((y+dy)*w+(x+dx))*4;od[di]=r;od[di+1]=g;od[di+2]=b;od[di+3]=210;}
+    }
+  }
+
+  // Sobel edge overlay (cyan edges on top of point cloud)
+  for(var ey=1;ey<h-1;ey+=2){
+    for(var ex=1;ex<w-1;ex+=2){
+      var sgx=-curGray[(ey-1)*w+ex-1]-2*curGray[ey*w+ex-1]-curGray[(ey+1)*w+ex-1]
+              +curGray[(ey-1)*w+ex+1]+2*curGray[ey*w+ex+1]+curGray[(ey+1)*w+ex+1];
+      var sgy=-curGray[(ey-1)*w+ex-1]-2*curGray[(ey-1)*w+ex]-curGray[(ey-1)*w+ex+1]
+              +curGray[(ey+1)*w+ex-1]+2*curGray[(ey+1)*w+ex]+curGray[(ey+1)*w+ex+1];
+      if(Math.abs(sgx)+Math.abs(sgy)>80){
+        var ei=(ey*w+ex)*4;od[ei]=100;od[ei+1]=255;od[ei+2]=255;od[ei+3]=200;
       }
     }
   }
 
-  // Motion overlay (yellow dots on changed pixels) using pre-tint grayscale
-  if(prevFullGray&&prevFullGray.length===curGray.length){
-    for(var mi=0;mi<curGray.length;mi++){
-      if(Math.abs(curGray[mi]-prevFullGray[mi])>25){
-        var mpi=mi*4;
-        d[mpi]=255;d[mpi+1]=255;d[mpi+2]=0;
-      }
-    }
-  }
-
-  ctx.putImageData(im,0,0);
+  ctx.putImageData(out,0,0);
   prevFullGray=curGray;
 
-  // Confidence bars at bottom
+  // ML bounding boxes
+  if(mlDetections.length>0){
+    ctx.strokeStyle='#00FFFF';ctx.lineWidth=2;ctx.font='bold 9px monospace';
+    mlDetections.forEach(function(det){
+      ctx.strokeRect(det.bbox[0],det.bbox[1],det.bbox[2],det.bbox[3]);
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(det.bbox[0],det.bbox[1]-12,det.bbox[2],12);
+      ctx.fillStyle='#00FFFF';
+      ctx.fillText(det.class.toUpperCase()+' '+Math.round(det.score*100)+'%',det.bbox[0]+2,det.bbox[1]-3);
+    });
+  }
+
+  // Confidence bars
   var barW=w/5,barH=25;
   for(var bi=0;bi<5;bi++){
-    var pct=world.floorPct[bi];
-    var bh=pct*barH;
-    var bx=bi*barW;
+    var pct=world.floorPct[bi],bh=pct*barH,bx=bi*barW;
     ctx.fillStyle=pct>0.5?'rgba(0,200,80,0.5)':'rgba(255,60,60,0.5)';
     ctx.fillRect(bx+1,h-bh,barW-2,bh);
     ctx.fillStyle='#fff';ctx.font='bold 9px monospace';
     ctx.fillText(Math.round(pct*100)+'%',bx+barW/2-12,h-bh-3);
-    if(world.cliffCols[bi]){
-      ctx.strokeStyle='#FF0000';ctx.lineWidth=2;
-      ctx.strokeRect(bx,h-barH,barW,barH);
-    }
+    if(world.cliffCols[bi]){ctx.strokeStyle='#F00';ctx.lineWidth=2;ctx.strokeRect(bx,h-barH,barW,barH);}
   }
-
-  // Direction arrow
-  var arrowFromX=w/2,arrowFromY=h-30;
-  var arrowToX=w/2+(world.clearest-2)*(w/6),arrowToY=h-55;
-  ctx.strokeStyle='#FF6A00';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(arrowFromX,arrowFromY);ctx.lineTo(arrowToX,arrowToY);ctx.stroke();
-  ctx.fillStyle='#FF6A00';ctx.beginPath();
-  ctx.moveTo(arrowToX,arrowToY-5);ctx.lineTo(arrowToX-5,arrowToY+5);ctx.lineTo(arrowToX+5,arrowToY+5);
-  ctx.closePath();ctx.fill();
-
-  // State overlay
+  var ax=w/2,ay=h-30,atx=w/2+(world.clearest-2)*(w/6),aty=h-55;
+  ctx.strokeStyle='#FF6A00';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(atx,aty);ctx.stroke();
+  ctx.fillStyle='#FF6A00';ctx.beginPath();ctx.moveTo(atx,aty-5);ctx.lineTo(atx-5,aty+5);ctx.lineTo(atx+5,aty+5);ctx.closePath();ctx.fill();
   ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,w,16);
   ctx.fillStyle='#FF6A00';ctx.font='bold 10px monospace';
-  ctx.fillText(aState+' | Floor: '+Math.round(world.floorTotal*100)+'%'+(world.cliff?' | CLIFF!':''),4,12);
+  ctx.fillText(aState+' | Floor: '+Math.round(world.floorTotal*100)+'%'+(world.cliff?' | CLIFF!':'')+(mlDetections.length?' | ML:'+mlDetections.length:''),4,12);
 },83);
 
 // ===== BOOT =====
@@ -899,7 +906,7 @@ addLog('SYSTEMS ONLINE',1);
 say("Ready to explore. Learning floor...","system");
 setEyes('curious');
 if(autoOn){aState='LEARN';startCmd();}
-setTimeout(function(){poll();if(typeof lucide!=='undefined')lucide.createIcons();},500);
+setTimeout(function(){poll();if(typeof lucide!=='undefined')lucide.createIcons();init3D();initML();},500);
 </script>
 </body>
 </html>
