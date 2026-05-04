@@ -1,6 +1,6 @@
 # LUN-E Explorer
 
-A desk companion rover built on the XIAO ESP32-S3 Sense. The ESP32 is the edge brain — it streams MJPEG frames and accepts motor commands. All intelligence runs in browser JavaScript served from a single embedded web page (`src/page_index.h`).
+A desk companion rover built on the XIAO ESP32-S3 Sense. The ESP32 is the edge brain - it streams MJPEG frames and accepts motor commands. All intelligence runs in browser JavaScript served from a single embedded web page (`src/page_index.h`).
 
 ## Architecture
 
