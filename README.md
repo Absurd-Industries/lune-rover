@@ -262,8 +262,8 @@ Requires [PlatformIO](https://platformio.org/).
 
 ```bash
 pio run                    # Build
-pio run --target upload    # Flash
-pio device monitor         # Serial output
+pio run --target upload    # Flash (on windows, this would be a COM3 or some other port; use the device manager; add a --upload-port flag if you're specificying a specific port)
+pio device monitor         # Serial output (remember to add the port under monitor_port in platform.ini)
 ```
 
 ## First-Time Setup
